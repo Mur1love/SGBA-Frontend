@@ -1,0 +1,17 @@
+# Dependências
+node_modules/
+
+# Builds
+dist/
+*.tsbuildinfo
+
+# Artefatos do Playwright MCP
+.playwright-mcp/
+
+# Ambiente
+.env
+.env.*
+
+# Sistema operacional / editor
+.DS_Store
+Thumbs.db
