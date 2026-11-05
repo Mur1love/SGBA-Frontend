@@ -299,3 +299,26 @@ Table exigencias_edital {
 5. RN04: `PENDENTE_DOCUMENTOS/INDEFERIDA` exigem `historicos_status.observacao` — Bean Validation + `CHECK` futuro.
 6. RN05: validar `now() BETWEEN editais.data_inicio/fim_submissoes`, não só `programas_bolsa.data_limite`.
 7. Envio valida `perguntas_edital.obrigatoria x respostas_submissao` e `exigencias_edital.obrigatorio x documentos_anexo`.
+
+---
+
+# SGBA — DER v2 → v3: Registro de Mudanças (Checkpoint 3 — Issue 1)
+
+**Arquivo atual:** `docs/der.dbml`
+**Modelo anterior:** v2 (pós-feedback Prof. Murilo — seções acima)
+**Modelo novo:** v3 — "fidelização": alinhando o DER às entidades JPA da implementação do Checkpoint 3 (entities ↔ DER 1:1 para a arguição, critério C1).
+**Como visualizar:** colar `docs/der.dbml` em dbdiagram.io
+
+## Resumo executivo v2 → v3
+
+| # | Mudança | Antes (v2) | Depois (v3) | Justificativa | Onde |
+|---|---|---|---|---|---|
+| 1 | `submissoes.protocolo` vira nullable | `protocolo varchar(10) [not null, unique]` | `varchar(10) [null, unique]` | Fluxo DRS: submissão nasce em `RASCUNHO` **sem protocolo**; o protocolo é gerado somente no `enviar` (RN02 — formato `#AAAA-XXXX` com contador anual, decisão D6). Not-null efetivo acontece na transição `RASCUNHO → RECEBIDA`: a coluna é preenchida 100% das submissões enviadas, mas informar `not null` impediria criar o rascunho (RF07 passo 1). A UK permanece para garantir unicidade após o envio. | `docs/der.dbml` §submissoes |
+| 2 | `editais.caminho_arquivo_pdf` vira nullable | `caminho_arquivo_pdf varchar(500) [not null]` | `varchar(500) [null]` | Fluxo DRS: o gerenciador cria o edital primeiro por JSON (RF04) e anexa o PDF oficial na sequência (upload, RNF06). Exigir `not null` na criação impediria o CRUD sem arquivo pré-existente. Preenchimento efetivo no upload. | `docs/der.dbml` §editais |
+| 3 | `usuarios` ganha `criado_em` / `atualizado_em` | (ausentes) | `timestamp [not null, default: now()]` / `[null]` | Entidades do cp3 já registram os rastros de auditoria; o DER passa a documentá-los para manter entidades ↔ DER 1:1 (C1). Demais tabelas (`programas_bolsa`, `submissoes`, `notificacoes`...) já tinham `criado_em` na v2. | `docs/der.dbml` §usuarios |
+
+**Intencionalmente mantido da v2:** as 5 uniques (`uk_edital_numero_ano`, `uk_pergunta_ordem`, `uk_exigencia_edital_tipo`, `uk_aluno_edital`, `uk_resposta_unica`) — as entidades JPA do backend as implementaram fielmente (`@UniqueConstraint` em `Edital`, `PerguntaEdital`, `ExigenciaEdital`, `Submissao`, `RespostaSubmissao`); `submissoes.edital_id` continua no lugar de `programa_id` (programa é obtido via `submissao.edital.programa`).
+
+## Nota para o Checkpoint 4 (futuro)
+
+`historicos_status` e `documentos_anexo` seguem sem mudança estrutural; completa-campo comparativo entidades × DER v3 está em `sgba-backend/docs/auditoria-entidades-der.md` (PR da Issue 1).

@@ -1,8 +1,9 @@
 // ============================================================
 // SGBA — Sistema de Gerenciamento de Bolsas e Auxílios (UPE)
-// DER — Modelo Lógico v2 (pós-feedback Prof. Murilo)
+// DER — Modelo Lógico v3 (fidelização com as entidades JPA do Checkpoint 3)
 // Fonte: requisitos.md (seção 7) + RNs e RFs do DRS
 // Formato: DBML (https://dbml.dbdiagram.io/docs) — cole em dbdiagram.io
+// Mudanças v2→v3: ver docs/der-mudancas.md (seção "v2 -> v3")
 // ============================================================
 
 // ---------- Enums (domínios fechados = normalização de valores) ----------
@@ -66,6 +67,8 @@ Table usuarios {
   email                 varchar(255) [not null, unique] // RN01: domínio @upe.br validado na aplicação
   senha_hash            varchar(255) [not null]
   funcao                funcao_usuario [not null] // RBAC: ROLE_ALUNO / ROLE_PROFESSOR / ROLE_GERENCIADOR
+  criado_em             timestamp [not null, default: `now()`] // v3: rastro de auditoria (entidades já têm)
+  atualizado_em         timestamp [null] // v3: rastro de auditoria (entidades já têm)
 
   Note: 'Identidade e autenticação. Sem dados acadêmicos — ficam em `alunos` (1:1).'
 }
@@ -119,7 +122,7 @@ Table editais {
   data_publicacao       date [not null]
   data_inicio_submissoes timestamp [not null] // novo: RN05 passa a ser validado aqui
   data_fim_submissoes   timestamp [not null] // novo: prazo da edição
-  caminho_arquivo_pdf   varchar(500) [not null] // RNF06: arquivo em disco, metadado no banco
+  caminho_arquivo_pdf   varchar(500) [null] // v3: nullable — edital é criado por JSON (criação) e o PDF oficial é anexado depois, no upload; preenchido no upload (RNF06)
   programa_id           bigint [not null] // FK
 
   Note: 'Edital oficial (PDF) = edição de um programa (RF04). Cada edição tem prazo e perguntas próprias.'
@@ -158,7 +161,7 @@ Table exigencias_edital {
 
 Table submissoes {
   id                    bigint [pk, increment]
-  protocolo             varchar(10) [not null, unique] // RN02: formato #AAAA-XXXX
+  protocolo             varchar(10) [null, unique] // v3: nullable — nulo durante RASCUNHO, gerado no envio (RN02 #AAAA-XXXX); UK garante unicidade após o envio
   status                status_submissao [not null, default: 'RASCUNHO'] // cache do último evento (ver Note)
   titulo_projeto        varchar(200) [null] // formulário: título do projeto
   projeto_resumo        text [null]
